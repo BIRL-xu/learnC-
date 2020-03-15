@@ -1,0 +1,7 @@
+/home/baul/learnCplusplus/primer/ch1/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/baul/learnCplusplus/primer/ch1/cmake-build-debug/CMakeFiles/1-20.dir
+/home/baul/learnCplusplus/primer/ch1/cmake-build-debug/CMakeFiles/1-21.dir
+/home/baul/learnCplusplus/primer/ch1/cmake-build-debug/CMakeFiles/1-23.dir
+/home/baul/learnCplusplus/primer/ch1/cmake-build-debug/CMakeFiles/1-24.dir
+/home/baul/learnCplusplus/primer/ch1/cmake-build-debug/CMakeFiles/1-22.dir
+/home/baul/learnCplusplus/primer/ch1/cmake-build-debug/CMakeFiles/edit_cache.dir

@@ -10,18 +10,20 @@ int main()
     Sales_item currentSaledBook, varSaledBook;
     if(std::cin >> currentSaledBook)
     {
+        int cnt = 1;
         while(std::cin >> varSaledBook)
         {
             if (currentSaledBook.isbn() == varSaledBook.isbn())
             {
-                currentSaledBook += varSaledBook;
+                ++cnt;
             } else
             {
-                std::cout << currentSaledBook << std::endl;
+                std::cout << currentSaledBook.isbn() << " has " << cnt << " sale records." <<  std::endl;
                 currentSaledBook = varSaledBook;
+                cnt = 1;
             }
         }
-        std::cout << currentSaledBook << std::endl;
+        std::cout << currentSaledBook.isbn() << " has " << cnt << " sale records." <<  std::endl;
     }
 
     return 0;
