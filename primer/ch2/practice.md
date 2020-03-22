@@ -316,3 +316,103 @@ p2 = p1; // 合法，非常量指针可以转换为指针常量
 p1 = p3; // 合法，顶层const指针p3可以赋值给普通指针
 p2 = p3; // 合法，顶层const不影响拷贝赋值，p2和p3都有底层const约束。
 ````
+----
+const与constexpr 修饰的区别：
+````c++
+const int sz = getSize(); // 合法,getSize()可以为普通函数。
+constexpr int sz = size(); // size()的返回类型必须是constexpr.\
+
+const int *p = nullptr; // p是一个指向整型常量的指针。
+constexpr int *ｑ = nullptr; // q是一个指向整型的常量指针；constexpr只修饰指针，不限定所指的对象。
+constexpr const int *p1 = nullptr; // 指向整型常量的常量指针。
+//constexpr将变量定义为了顶层const.
+````
+----
+#### `auto`在一条语句中声明多个变量时，因一条语句只能有一个基本数据类型，所以该语句中所有变量的初始基本数据类型必须都一样：
+````c++
+int i =0;
+auto i = 0, *p = &i; // 正确：i是整型，ｐ是整型指针。
+auto sz = 0, pi = 3.14; // 错误：sz和pi的类型不一致。
+````
+#### `auto`一般会忽略掉顶层const:
+````c++
+const int ci = 0, &cr = ci;
+auto a = ci; // a是一个整数(ci的顶层const特效被忽略掉了)
+const auto b = ci; // b是一个整型常量
+auto &g = ci; // 整型常量引用(const特性被保留)
+auto p = &ci; //指向整型常量的指针(const特性被保留) 
+auto &h = 42; // 错误：不能为非常量引用h绑定到字面值。
+const auto &j = 42; // 正确：可以为常量引用j绑定字面值。
+````
+#### Q2.33: 利用本节定义的变量，判断下列语句的运行结果。
+````c++
+a = 42; b = 42; c = 42; // 正确：都是给整型赋值.
+d = 42; e= 42; g = 42; // 错误：d 和 e是指针类型，不能直接赋值整数；g是整型常量的引用，不能通过它修改变量的值。
+````
+#### Q2.35: 判断下列定义推断出的类型是什么，然后编写程序进行验证。
+````c++
+const int i = 42;
+auto j = i; // int类型
+const auto &k = i; // const int类型的引用
+auto *p = &i; // const int*类型
+const auto j2 = i, &k2 = i; // j2 是const int类型, k2是const int& 类型
+````
+#### A: 见2-35.cpp。
+
+----
+#### decltype和引用
+* decltype返回表达式结果对应的类型:
+````c++
+int i = 42, *p = &i,  &ri = i;
+decltype(r+0) b; // 正确：加法的结果是int, 因此b是一个未初始化的int型变量。
+decltype(r) c; // 正确:c的类型是int型引用。
+decltype(i) d; // 正确：ｄ是一个未初始化的int型变量。
+decltype((i)) e; // 错误：e是int型引用，必须初始化。
+decltype(*p) f; // 错误：指针解引用得到的是int型引用，必须初始化。
+````
+* `decltype((var))`的结果永远是引用，而`decltype(var)`的结果只有当`var`是引用变量或指针变量时才是引用。
+----
+#### Q2.36: 关于下面的代码，请指出每一个变量的类型以及程序结束时它们各自的值。
+````c++
+int a = 3, b = 4;
+decltype(a) c = a; // c是int型
+decltype((b)) d= a; // d是int型引用
+++c;
+++d;
+// 程序结束时的值 a = 4, b = 4, c = 4, d = 4.
+````
+#### Q2.37: 赋值是会产生引用的一类典型表达式，引用的类型就是左值的类型。也就是说，如果i是int，则表达式`i = x`的类型是int&。根据这一特点，请指出下面的代码中每一个变量的类型和值。
+````c++
+int a = 3, b = 4; // int型
+decltype(a) c = a; // c是int型，值为3
+decltype(a = b) d = a; // d是ａ的int型引用,值为3; (a = b)只用来推断类型，不改变a的值。
+````
+#### Q2.38: 说明由decltype指定类型和由auto指定类型有何区别。请举出一个例子，decltype指定的类型与auto指定的类型一样；再举一个例子，decltype指定的类型与auto指定的类型不一样。
+#### A:
+* auto是根据初始值表达式来推断变量的类型
+* decltype则是用表达式来推断类型，不用该表达式的值来初始化变量。
+````c++
+// 相同类型
+int i = 0;
+auto a = i; // a是int型
+decltype(i) b; // b是一个int型
+// 不同类型
+int m = 0, &rm = m;
+auto c = rm; // c是int型
+decltype(rm) d; // d是int引用类型
+````
+#### Q2.39: 编译下面的程序观察其运行结果，注意，如果忘记写类定义体后面的分号会发生什么情况？记录下相关信息，以后可能会有用。
+````c++
+struct Foo {} // 注意：没有分号。
+````
+#### A: 编译时报错：`error: expected ‘;’ after struct definition`
+#### 2.40: 根据自己的理解写出Sales_data类，最好与书中的例子有所区别。
+#### A:
+````c++
+struct Sales_data
+{
+    std::string bookName;
+    unsigned int saledNum{0};
+    double price{0.0};
+};
+````
