@@ -26,7 +26,7 @@ int main()
      const string s = "hello";
      for(auto &c : s)
      {
-         c = 'X';
+        // c = 'X'; // 错误： c是const char的引用。
      }
     return 0;
 }
