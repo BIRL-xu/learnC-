@@ -87,6 +87,5 @@ int main()
     {
         cout << "两个vector对象不相等。" << endl;
     }
-
     return 0;
 }
