@@ -9,7 +9,7 @@ using namespace std;
 int main()
 {
     string word;
-    string lastWord;
+    string lastWord, maxWord;
     unsigned int maxCnt = 0;
     unsigned int cnt = 1;
     while(cin >> word)
@@ -22,12 +22,18 @@ int main()
         if(lastWord == word)
         {
             ++cnt;
+            if(cnt > maxCnt)
+            {
+                maxWord = lastWord;
+                maxCnt = cnt;
+            }
         } else
         {
-            maxCnt = cnt;
+            lastWord = word;
             cnt = 1;
         }
-
     }
+    cout << "重复出现次数最多的单词是：　" << maxWord
+    << "; 重复出现次数是　" << maxCnt << "　次。" << endl;
     return 0;
 }
