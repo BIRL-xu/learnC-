@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.5)
+project(ch6)
+
+set(CMAKE_CXX_STANDARD 14)
+
+add_executable(6-4 6-4.cpp)
+add_executable(6-5 6-5.cpp)
+add_executable(6-7 6-7.cpp)
+add_executable(6-10 6-10.cpp)
+add_executable(6-12 6-12.cpp)
+add_executable(6-17 6-17.cpp)
+add_executable(6-21 6-21.cpp)
+add_executable(6-25 6-25.cpp)
+add_executable(6-26 6-26.cpp)
+add_executable(6-27 6-27.cpp)
+add_executable(6-30 6-30.cpp)
+add_executable(6-32 6-32.cpp)
+add_executable(6-33 6-33.cpp)
+add_executable(6-38 6-38.cpp)
+
