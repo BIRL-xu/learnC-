@@ -308,3 +308,171 @@ decltype((arrS)) &func(); // decltype使用双括号定义引用类型.
 ````
 #### 6.38: 修改arrPtr函数，使其函数返回数组的引用。
 #### A: 见6-38.cpp。
+
+###6.3 函数重载
+* 函数重载的定义：同一作用域内，形参数量或形参类型不同的同名函数。
+    * 不同返回值类型不能用于实现重载函数
+    * 顶层const也不能用于实现重载
+````c++
+Record lookup(Phone);
+Record lookup(const Phone); // 值拷贝属于顶层const，不能构成重载
+
+Record lookup(Phone *p);
+Record lookup(Phone *const p); // 常量指针也是顶层const,不能构成重载
+````
+    * 底层const可以用于实现重载
+````c++
+Record lookup(Account&);
+Record lookup(const Account&); // 底层const可以实现重载
+
+Record lookup(Account*);
+Record lookup(const Account*); // 底层const可实现重载
+````
+### 6.5 特殊用途语言特性
+#### 6.5.1默认实参
+* 默认实参负责填补函数调用缺少的尾部实参，不能前面几个的实参用默认值而只修改后面的实参。
+* 一旦某个形参被赋予了默认值，它后面的所有形参都必须有默认值
+#### Q6.40: 下面的那个声明是错误的？为什么？
+````c++
+(a) int ff(int a, int b = 0, int c = 0); // 正确
+(b) char *init(int ht = 24, int wd, char bckgrnd); // 错误：　一旦某个形参被赋予了默认值，它后面的所有形参都必须有默认值。
+````
+#### Q6.41: 下面的哪个调用是非法的？为什么？哪个调用虽然合法但显然与程序员的初衷不符？为什么？
+````c++
+char *init(int hg, int wd = 80, char bckgrnd = ' ');
+(a)init(); // 错误：必须至少给定一个实参
+(b)init(24, 10); // 正确，等价于init(24, 10, ' ');
+(c)init(14, '*'); // 错误：初衷是修改给第一和第三个形参赋值，第二个形参使用默认值；但不能跳过中间某个参数只修改后面的默认参数
+// 正确调用为
+init(14, 80, '*');
+````
+#### Q6.42: 给make_plural函数的第二个形参赋予默认实参's',利用新版本的函数输出单词success和failure的单数和复数形式。
+#### A: 见６6-42.cpp。
+#### 6.5.2 内联函数和constexpr函数
+* 内联函数可避免函数调用的开销
+* constexpr函数是指能用于常量表达式的函数：
+    * 函数的返回类型及所有形参都必须是字面值类型
+    * 函数体中必须有且只有一条return语句
+    * constexpr函数不一定返回常量表达式
+    
+###6.6函数匹配
+* 候选函数具备的两个特征：
+    * 与被调用的函数同名
+    * 其声明在调用点可见
+* 可行函数：
+    * 其形参数量与本次调用提供的实参数量相等
+    * 每个实参的类型与对应的形参类型相同，或者能转换成形参的类型
+* 从可行函数中选择与本次调用最匹配的函数，如果没有找可行函数，编译器报告无匹配函数的错误
+#### 6.49: 什么是候选函数？什么是可行函数？
+#### A:候选函数就是在同一作用域内与被调用函数同名的那些函数；可行函数就是候选函数中的重载函数。
+#### 6.50: 已知对函数f的声明如下，对于下面的每一个调用列出可行函数。其中哪个函数是最佳匹配？如果调用不合法，是因为没有可匹配的函数还是因为调用具有二义性？
+````c++
+// f的声明
+void f();
+void f(int);
+void f(int, int);
+void f(double, double = 3.14);
+
+// 调用
+(a)f(2.56, 42);
+(b)f(42);
+(c)f(42, 0);
+(d)f(2.56,3.14);
+````
+#### A
+````c++
+// 可行函数：f(int, int),f(double, double = 3.14)
+// 调用具有二义性
+(a)f(2.56, 42);
+
+// 可行函数：f(int),f(double, double = 3.14)
+// 最佳匹配:f(int)
+(b)f(42);
+
+//可行函数：f(int, int),f(double, double = 3.14)
+//最佳匹配: f(int, int)
+(c)f(42, 0);
+
+//可行函数：f(int, int),f(double, double = 3.14)
+//最佳匹配: f(double, double = 3.14)
+(d)f(2.56,3.14);
+````
+#### Q6.51:编写函数f的4个版本，令其各输出一条可以区分的消息。验证上一题的答案，如果你回答错了，反复研究本节的内容直到你弄清自己错在何处。
+#### A:见6-51.cpp。
+
+----
+### 6.7:函数指针
+* 函数指针指向的是函数而非对象，函数类型由它的返回类型和形参类型共同决定，与函数名无关
+* 函数指针声明：`返回类型 (*变量名)(形参列表)`
+* 函数名可自动转换为指针:
+````c++
+// pf是函数指针, lengthCompare是函数名
+pf = lengthCompare;
+pf = &lengthCompare; // 与上面等价
+````
+* 不同类型函数指针之间不能相互转换
+* 重载函数的指针：指针类型必须与重载函数中的某一个精确匹配
+````c++
+// 重载函数
+void ff(int*);
+void ff(unsigned int);
+
+// 定义重载函数的指针
+void (*pf1) (unsigned int) = ff;// 正确：pf指向void ff(unsigned int).
+void (*pf2) (int) = ff; // 错误：没有任何一个ff与该形参列表匹配
+double (*pf3) (int*) = ff; // 错误：ff和pf3的返回类型不匹配。
+````
+* 函数指针作为形参：
+````c++
+// 第三个形参是函数类型，它会自动地转换成指向函数的指针
+//即将形参以声明函数的形式进行定义
+void useBigger(int a, int b, bool pf(const string &, const string &));
+//等价声明
+void useBigger(int a, int b, bool (*pf) (const string &, const string &));
+
+// 调用：直接把函数名作为实参
+useBigger(a, b, lengthCompare);
+````
+* 使用类型别名和decltype声明函数指针
+````c++
+// typedef
+typedef bool (*FuncP) (const string &, const string &);
+typedef decltyp(lengthCompare) *FuncP2;
+using FuncP3 = bool (*) (const string &, const string &);
+
+// 重新声明useBigger函数
+void useBigger(int a, int b, FuncP);
+void useBigger(int a, int b, FuncP2);
+void useBigger(int a, int b, FuncP3);
+````
+* 返回函数指针的声明
+````c++
+// 声明一个函数指针，指向的函数类型为：返回值类型为int,形参类型为(int*, int).
+// 传统形式(难以理解)
+int (*f1(int)) (int*, int); // 由内往外读
+// 使用类型别名
+using pf = int (*) (int*, int);
+pf f1(int); // 简介明了
+// 使用尾置返回类型
+auto f1(int) -> int (*) (int*, int);
+````
+----
+#### Q6.54: 编写函数的声明，令其接受两个int形参并且返回类型也是int;然后声明一个vector对象，令其元素是指向该函数的指针。
+#### A:
+````c++
+int func(int, int);
+
+// 使用typedef和decltype
+typedef int(*pf1)(int ,int);
+vector<pf1> pfVec1;
+typedef decltype(func) *pf2;
+vector<pf2> pfVec2;
+// 使用using
+using pf3 = int(*)(int, int);
+vector<pf3> pfVec3;
+````
+#### Q6.55: 编写4个函数，分别对两个int值执行加、减、乘、除运算；在上一题创建的vector对象中保存指向这些函数的指针。
+#### A: 见6-55.cpp。
+#### Q6.56: 调用上述vector对象中的每个元素并输出其结果
+#### A:　见6-55.cpp。
+* 函数指针的优点：使用函数指针指针同一类型的函数，能够便捷地对多个函数进行调用。

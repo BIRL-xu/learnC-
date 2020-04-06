@@ -17,4 +17,7 @@ add_executable(6-30 6-30.cpp)
 add_executable(6-32 6-32.cpp)
 add_executable(6-33 6-33.cpp)
 add_executable(6-38 6-38.cpp)
+add_executable(6-42 6-42.cpp)
+add_executable(6-51 6-51.cpp)
+add_executable(6-55 6-55.cpp)
 
