@@ -80,4 +80,236 @@ private:
 
 #### Q7.23 & 7.24: 编写你自己的Screen类。
 #### A: 见7-23.h
- 
+
+----
+### 返回*this的成员函数
+* 返回引用的函数是左值的，即返回的是调用这个函数的对象的本身；
+* 返回*this可以实现函数的连续调用，如
+````c++
+myScreen.move(4).set('#');
+````
+* const成员函数如果以引用的形式返回*this，则返回的对象被转换成常量引用。
+* 常量对象只能调用常量成员函数，而非常量成员函数即可调用常量成员函数也可调用非常量成员函数
+* 当非常量成员函数调用常量成员函数时，**this指针会被隐式地转换为指向常量的指针，但该常量属性只在常量函数内有效**，如
+````c++
+class Screen{
+public:
+    Screen &display(std::ostream &os)
+    {
+        do_display(os); // this指针被隐式转换为指向常量的指针，隐式转换的常量属性只在do_display内有效；
+        return *this;   // 解引用后得到非常量对象
+    }
+    // 重载为常量函数，返回类型只能是常量，this指针被隐式转换为指向常量的指针
+    const Screen &display(std::ostream &os) const
+    {
+        do_display(os); // this指针以及是指向常量的指针，不用再转换。
+        return *this;  // 在该函数内，this指针始终指向常量，所以解引用后得到的对象是常量，所以返回类型只能是常量类型。
+    }
+private:
+    // 常量函数
+    void do_display(std::ostream &os) const
+    {
+        os << contents;
+    }
+    std::string contents;
+};
+````
+----
+#### Q7.27: 给你自己的Screen类添加 move, set和display函数，通过执行下面的代码检验你的类是否正确。
+````c++
+Screen myScreen(5, 5, 'X');
+myScreen.move(4, 0).set('#').display(cout);
+cout << "\n";
+myScreen.display(cout);
+cout << "\n";
+````
+#### A:见7-23.h和7-23.cpp。
+### 将类前向声明的用途(不完全类型)：定义指向这种类型的指针或引用，以这种不完全类型作为参数或者返回类型的函数。
+### 可以在类内部声明指向自身的指针或引用，但不能是普通对象
+#### Q7.31: 定义一对类X和Y，其中X包含一个指向Y的指针，而Y包含一个类型为X的对象。
+#### A: 将类Y进行前向声明。
+````c++
+class Y;
+class X{
+    Y *py;
+};
+
+class Y{
+    X x;
+};
+````
+### 如果一个类指定了友元类，则友元类的成员函数可以访问此类包括非公有成员在内的所有成员:
+* 友元类声明
+````c++
+class A{
+    friend class B;    
+};
+// B可以访问Ａ的所有成员
+class B{
+    
+};
+````
+### 友元关系不存在传递性。(ps:朋友的朋友不一定是朋友。):
+````c++
+class A{
+    friend class B;    
+};
+// B可以直接访问Ａ的所有成员
+class B{
+    frend class C;
+};
+// C可以直接访问B的所有成员，但不能直接访问A的任何成员.
+class C{};
+````
+###　声明成员函数作为友元，不是真的声明函数，所以需要先声明函数再声明才能使用友元：
+````c++
+// B可以访问Ａ的所有成员
+class B{
+   void func(); 
+};
+
+class A{
+    // 友元函数必须在A类之前被声明
+    friend void B::func();    
+};
+````
+#### Q7.32: 定义你自己的Screen和Window_mgr，其中clear是Window_mgr的成员，是Screen的友元。
+#### 编译器处理完类中的全部声明后才会处理成员函数的定义。
+#### 类型名不能覆盖类作用域外的声明：
+````c++
+typedef double Money;
+class Account{
+public:
+    Money balance(){return bal;} // 使用外层作用域的Money.
+private:
+    typedef double Money; // 错误：不能重新定义Money.
+    Money bal;
+};
+````
+#### Q7.34: 如果我们把第256页的Screen类的pos的typedef放在类的最后一行会发生什么情况？
+#### A: 使用pos的时候会报错，显示pos是不可知的。因此，在使用类型名之前，必须先声明。
+#### Q7.35: 解释下面代码的含义，说明其中的Type和initVal分别使用了哪个定义。如果代码存在错误，尝试修改它。
+````c++
+typedef string Type;
+Type initVal();
+class Exercise{
+public:
+    typedef double Type; // 错误：不能重复定义Type，删除该定义或重命名
+    Type setVal(Type);
+    Type initVal();
+private:
+    int val;
+};
+
+Type Exercise::setVal(Type parm)
+{
+    val = parm + initVal(); // 成员函数initVal().
+    return val;
+}
+````
+
+----
+### 构造函数
+* 必须通过构造函数初始值列表进行初始化的案例：
+    * 成员是const或引用时必须执行初始化，而不是在构造函数中赋值
+    * 成员是某种类类型且该类没有默认构造函数时
+    * 初始值列表不限定顺序，编译器会自动根据数据成员在类中声明的顺序进行初始化；特例，某个数据成员被另一个成员初始化时，必须注意初始化顺序：
+````c++
+ class X{
+    int i;
+    int j;
+    // 改正初始化顺序
+    //int j;
+    //int i;
+public:
+    // i是未定义的，看似j先被初始化了，然后再用j初始化i;
+    // 但实际初始化顺序是先i后j，再初始化i时j是未定义的。
+    // 修改：将数据成员的声明顺序对调一下即可。
+    x(int val) : j(val), i(j){}
+}; 
+````
+* 所有形参都有默认值（常用的是１个形参）的构造函数具有两个特征：默认构造函数和提供给定实参的构造函数：
+````c++
+class A{
+public:
+    A(int a = -1){}
+};
+
+// 实例化
+A a1;   // 实现默认构造函数的功能
+A a2(0);
+````
+* 委托构造函数：　重复利用已有的构造函数进行初始化
+````c++
+class Sales_data{
+public:
+    // 非委托构造函数
+    Sales_data(std::string s, unsigned cnt, double price) : 
+        bookNo(s), units_sold(cnt), revenue(cnt*price){}
+    // 委托上面的构造函数进行初始化
+    Sales_data() : Sales_data("", 0, 0){}
+    // 委托第一个构造函数进行初始化
+    Sales_data(std::string s) : Sales_data("", 0, 0){}
+    // 委托第二个构造函数进行初始化
+    Sales_data(std::istream &is) : Sales_data(){read(is, *this);}
+};
+````
+----
+#### Q7.36:下面的初始值是错误的，请找出问题所在并尝试修改它。
+````c++
+struct X{
+    X(int i, int j) : base(i), rem(base%j){} // 实际上，base在rem之后初始化，引发未定义行为
+//    int rem, base;
+    // 修改为
+    int base, rem;
+};
+````
+#### Q7.38:有些情况下我们希望提供cin作为接受istream&参数的构造函数的默认实参，请声明这样的构造函数。
+#### A:
+````c++
+class A{
+public:
+    A(std::istream& is);
+};
+````
+#### Q7.43: 假定有一个名为NoDefault的类，它有一个接受int的构造函数，但是没有默认构造函数。定义类C,C有一个NoDefault类型的成员，定义C的默认构造函数。
+#### A:见7-43.cpp。
+````c++
+#include <iostream>
+#include <vector>
+
+class NoDefault{
+public:
+    NoDefault(int a) : i(a){}
+
+private:
+    int i;
+};
+
+class C{
+public:
+    C() : obj(-1){}
+//    C(){} // 错误，要求显示初始化成员obj。
+private:
+    NoDefault obj;
+};
+
+int main()
+{
+    C c;
+    return 0;
+}
+````
+#### Q7.44:下面这条声明合法吗？如果不，为什么？
+````c++
+vector<NoDefault> vec(10);
+````
+#### A:不合法，NoDefault类没有默认构造函数，不能构造除对象元素;修改为：
+````c++
+vector<NoDefault> vec(10, NoDefault(0));
+````
+#### Q7.46: 下面哪些论断是不正确的？为什么？
+(a) 一个类必须至少提供一个构造函数。　// 错，简单类（不包含其他类类型）可以不提供构造函数，编译器会自动创建一个。
+(b) 默认构造函数是参数列表为空的构造函数。　// 错，参数列表全是默认参数的构造函数也是默认构造函数。
+(c) 如果对于类来说不存在有意义的默认值，则类不应该提供默认构造函数。 // 错，即使用默认构造函数初始化一些无意义的初始值也是有用的，避免不可知的行为发生。
+(d) 如果类没有定义默认构造函数，则编译器将为其生成一个并把每个数据成员初始化成相应的默认值。 // 错，只有没有自己定义构造函数的类，编译器才会自动生成一个；而且，不是所有数据成员都能被初始化，如某种没有定义默认构造函数的类类型不能初始化。

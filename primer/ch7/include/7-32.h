@@ -7,10 +7,25 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
+
+class Screen;
+
+class Window_mgr{
+public:
+    using ScreenIndex = std::vector<Screen>::size_type;
+    Window_mgr();
+    void clear(ScreenIndex);
+
+private:
+    std::vector<Screen> screens;
+};
 
 class Screen{
 public:
     typedef unsigned pos;
+    friend void Window_mgr::clear(ScreenIndex);
+
     Screen() = default;
     Screen(pos ht, pos wd) : height(ht), width(wd), contents(ht*wd, ' '){}
     Screen(pos ht, pos wd, char c) : height(ht), width(wd), contents(ht*wd, c){}
@@ -48,10 +63,6 @@ public:
     {
         do_display(os); // this指针被隐式转换为了常量指针
         return *this;  // 在该函数内，this指针始终指向常量，所以解引用后还是常量。
-    }
-
-    pos size() const{
-        return height * width;
     }
 private:
     // 常量函数
