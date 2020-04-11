@@ -313,3 +313,130 @@ vector<NoDefault> vec(10, NoDefault(0));
 (b) 默认构造函数是参数列表为空的构造函数。　// 错，参数列表全是默认参数的构造函数也是默认构造函数。
 (c) 如果对于类来说不存在有意义的默认值，则类不应该提供默认构造函数。 // 错，即使用默认构造函数初始化一些无意义的初始值也是有用的，避免不可知的行为发生。
 (d) 如果类没有定义默认构造函数，则编译器将为其生成一个并把每个数据成员初始化成相应的默认值。 // 错，只有没有自己定义构造函数的类，编译器才会自动生成一个；而且，不是所有数据成员都能被初始化，如某种没有定义默认构造函数的类类型不能初始化。
+
+----
+### 隐式的类类型转换
+* 能通过一个实参调用的构造函数(只有一个形参的构造函数、第一个形参无默认值，其他形参都有默认值、所有形参都有默认值三种构造函数)定义了一条从构造函数的参数类型向类类型隐式转换的规则：
+````c++
+class Sales_data{
+public:
+    // 非委托构造函数
+    Sales_data(std::string s, unsigned cnt, double price) : 
+        bookNo(s), units_sold(cnt), revenue(cnt*price){}
+    // 委托上面的构造函数进行初始化
+    Sales_data() : Sales_data("", 0, 0){}
+    // 委托第一个构造函数进行初始化
+    Sales_data(std::string s) : Sales_data("", 0, 0){}
+    // 委托第二个构造函数进行初始化
+    Sales_data(std::istream &is) : Sales_data(){read(is, *this);}
+};
+
+string null_book = "三体";
+Sales_data item;
+item.combine(null_book); //编译器会调用第三个构造函数自动创建一个Sales_data对象；
+item.comint(std::cin); // 调用第四个构造函数创建一个临时的Sales_data对象；
+// 拷贝形式初始化也会进行隐式类类型转换
+Sales_data item1 = null_book;
+````
+* 只允许进行一步隐式类类型转换:
+````c++
+item.combine("藏地密码"); // 错误：没有对应字符串字面值常量的构造函数；需要先把字符串字面值转换为string对象,然后转转换为Sales_data对象，但不允许。
+// 改正为
+item.combine(std::string("藏地密码"));
+````
+
+* 使用关键字`explicit`抑制隐式的类类型转换,在构造对象时强制只能执行直接初始化或显示使用构造函数进行转换
+````c++
+class Sales_data{
+public:
+    // 非委托构造函数
+    Sales_data(std::string s, unsigned cnt, double price) : 
+        bookNo(s), units_sold(cnt), revenue(cnt*price){}
+    // 委托上面的构造函数进行初始化
+    Sales_data() : Sales_data("", 0, 0){}
+    // 委托第一个构造函数进行初始化
+    explicit Sales_data(std::string s) : Sales_data("", 0, 0){}
+    // 委托第二个构造函数进行初始化
+    Sales_data(std::istream &is) : Sales_data(){read(is, *this);}
+};
+string null_book = "三体";
+Sales_data item;
+item.combine(null_book); //错误
+item.combine(Sales_data(num_book)); // 正确：显示使用构造函数进行转换。
+item.combine(static_cast<Sales_data>(num_book)); // 正确：显示使用构造函数进行转换。
+item.comint(std::cin); // 正确
+// 拷贝形式初始化也会进行隐式类类型转换
+Sales_data item1 = null_book; // 错误
+Sales_data item2(null_book); // 正确
+````
+----
+#### Q7.49: 对于combine函数的三种不同声明，当我们调用i.combine(s)时分别发生什么情况？其中i是一个Sales_data，而s是一个string对象。
+````c++
+Sales_data &combine(Sales_data); // 正确：进行了隐式转换
+Sales_data &combine(Sales_data&); // 错误：不能创建一个Sales_data的临时对象绑定到string对象上；相当于Sales_data &temp = Sales_data(s);非常量引用右值是非法的
+Sales_data &combine(const Sales_data&); // 正确：右值只能被 const 类型的 reference 所指向，非 const 的引用则是非法的；相当于const Sales_data &temp = Sales_data(s).
+````
+#### Q7.52: vector将其但参数的构造函数定义为explicit的，而string则不是，你觉得原因何在？
+#### A: 因为当定义一个int类型的vector对象时，如果单参数构造函数不是explicit的，会出现含义不明确的情况，如：
+````c++
+vector<int> ivec(10); // ivec的包含10个元素；
+vector<int> ivec = 10; // 开发者的意图可能是定义10个元素的vector对象，也可能是定义只包含1个元素的vector对象，初始值为10；
+````
+#### 而string则不存在这种歧义:`string s("hello");`和`string s = "hello"`的含义都很明确，就是创建一个string对象s，它的初始值是hello.
+###聚合类：
+* 所有成员都是public的
+* 没有定义任何构造函数
+* 没有类内初始值
+* 没有基类，也没有virtual函数（所以可以有成员函数）
+#### Q7.52: 使用2.6.1(第64页)的Sales_data类，解释下面的初始化过程。如果存在问题，尝试修改它。
+````c++
+//64页的Sales_data定义
+struct Sales_data{
+    std::string bookNo;
+    unsigned units_sold = 0.0;
+    double revenue = 0.0;
+};
+Sales_data item = {"978-0590353403", 25, 15.99};
+````
+#### A: Sales_data不是聚合类，因其内部成员有类内初始值，因此不能用花括号的初始值列表进行初始化。
+### 字面值常量类：
+* 数据成员都是字面值类型的聚合类
+* 或满足一下条件：
+    * 数据成员都必须是字面值类型
+    * 类必须至少含有一个constexpr构造函数
+    * 如果一个数据成员含有类内初始值，则内置类型成员的初始值必须是一条常量表达式；或者如果成员属于某种类型，则初始值必须使用成员自己的constexpr构造函数
+    * 类必须使用析构函数的默认定义（即不能自己定义析构函数）
+* 用途,即自定义字面值常量，可以用于编译时初始化一些const变量：So the advantage of the "literal type" rules is that they allow you to define new class types that can be used in constant expressions.参考:[When should literal classes be used in C++?](https://stackoverflow.com/questions/14307996/when-should-literal-classes-be-used-in-c)
+### 静态成员的特性
+* 类内初始化：只能为字面值常量类型的静态成员提供const整数类型的类内初始值；
+* 静态成员可以使不完全类型，如静态成员的类型可以使它所属类的类类型，非而非静态成员则只能是指针或引用；
+````c++
+class Bar{
+public: 
+    // ...
+private: 
+    static Bar mem1; // 正确
+    Bar *mem2; // 正确
+    Bar mem3;  // 错误。
+};
+````
+* 静态成员属于整个类所有，不需要依赖任何对象,需要在类外单独分配空间(所以需要在类外定义)
+* 可以通过类名直接访问public静态成员
+* 可以通过对象名访问public静态成员
+* 成员函数可以直接访问静态成员变量
+* 从命名空间的角度理解：
+    * 类的静态成员只是类这个命名空间中的全局变量和全局函数
+    * 不同的是，类可以对静态成员进行访问权限的限制，而命名空间不行
+* 从面向对象的角度理解：
+    * 类的静态成员属于类概念本身
+    * 类的所有对象共享相同的静态成员
+#### Q7.58:下面的静态数据成员的声明和定义有错误吗？请解释原因。
+````c++
+// example.h
+class Example{
+public:
+    static double rate = 6.5; //　错误：非字面值类型的静态成员不能在类内初始化。
+    static const int vecSize = 20;// 错误：非字面值类型的静态成员不能在类内初始化。
+    static vector<double> vec(vecSize);// 错误：非字面值类型的静态成员不能在类内初始化。
+};
+````
